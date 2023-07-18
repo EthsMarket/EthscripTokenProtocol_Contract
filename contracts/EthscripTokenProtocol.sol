@@ -48,6 +48,7 @@ contract EthscripTokenProtocol is Ownable, ReentrancyGuard{
     address payable public receiver;
     uint256 public protocel_fee;
     address public authorized_signer;
+    bool public isEnable_x_to_y;
 
     event EthscripCategory(bytes32 indexed _mRoot, string _name, uint256 _eTotal, uint256 _tAmount);
 
@@ -58,12 +59,18 @@ contract EthscripTokenProtocol is Ownable, ReentrancyGuard{
     event EthscripWithdrawn(address indexed owner, bytes32 indexed _e_id, bool state , EthscripState e_state);
 
     event ethscriptions_protocol_TransferEthscription(address indexed recipient,bytes32 indexed ethscriptionId);
+    event ethscriptions_protocol_TransferEthscriptionForPreviousOwner(
+        address indexed previousOwner,
+        address indexed recipient,
+        bytes32 indexed ethscriptionId
+    );
 
     constructor(address payable _receiver, address _authorized_signer,bytes32 _merkleRoot_og) {
         receiver = _receiver;
         protocel_fee = 0.000 ether;
         merkleRoot_og = _merkleRoot_og;
         authorized_signer = _authorized_signer;
+        isEnable_x_to_y = false;
     }
 
     function setReceiver(address payable _rec)external onlyOwner {
@@ -80,6 +87,10 @@ contract EthscripTokenProtocol is Ownable, ReentrancyGuard{
 
     function setAuthorized_signer(address _authorized_signer)external onlyOwner {
         authorized_signer = _authorized_signer;
+    }
+
+    function setEnable_x_to_y(bool _isEnable)external onlyOwner {
+        isEnable_x_to_y = _isEnable;
     }
 
     function ethscripInitializes(bytes32 _e_id) private nonReentrant{
@@ -165,8 +176,15 @@ contract EthscripTokenProtocol is Ownable, ReentrancyGuard{
             eToken.burn(msg.sender,ethscripTokens[_root].tAmount);
 
             ethscriptions[_e_id].isSplit = false;
+
+            if(isEnable_x_to_y){
+                emit ethscriptions_protocol_TransferEthscriptionForPreviousOwner(ethscriptions[_e_id].owner, msg.sender, _e_id);
+            }else{
+                emit ethscriptions_protocol_TransferEthscription(msg.sender,_e_id);
+            }
+
             ethscriptions[_e_id].owner = address(0x0);
-            emit ethscriptions_protocol_TransferEthscription(msg.sender,_e_id);
+
             emit TokenToEthscrip(address(0x0), _e_id, false,EthscripState.Withdraw);
     }
 
@@ -174,9 +192,14 @@ contract EthscripTokenProtocol is Ownable, ReentrancyGuard{
         require(ethscriptions[_e_id].owner == msg.sender, "Error: No permissions");
         require(ethscriptions[_e_id].isSplit == false,"Error: State error .");
 
+        if(isEnable_x_to_y){
+            emit ethscriptions_protocol_TransferEthscriptionForPreviousOwner(ethscriptions[_e_id].owner, msg.sender, _e_id);
+        }else{
+            emit ethscriptions_protocol_TransferEthscription(msg.sender, _e_id);
+        }
+
         ethscriptions[_e_id].owner = address(0x0);
         
-        emit ethscriptions_protocol_TransferEthscription(msg.sender, _e_id);
         emit EthscripWithdrawn(address(0x0), _e_id, false, EthscripState.Withdraw);
     }
 
