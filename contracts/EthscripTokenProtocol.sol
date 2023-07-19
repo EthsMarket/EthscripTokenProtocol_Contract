@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.7;
 
 
 contract Ethscrip_Token is Ownable, ReentrancyGuard, ERC20{
@@ -26,7 +26,6 @@ contract Ethscrip_Token is Ownable, ReentrancyGuard, ERC20{
 contract EthscripTokenProtocol is Ownable, ReentrancyGuard{
 
     enum EthscripState { Enter, Signed, Withdraw }
-    EthscripState public state;
 
     struct Ethscription{
         address owner;
@@ -44,10 +43,10 @@ contract EthscripTokenProtocol is Ownable, ReentrancyGuard{
     }
     mapping(bytes32 => EthscripToken) public ethscripTokens;
 
-    bytes32 public merkleRoot_og;
-    address payable public receiver;
+    bytes32 private merkleRoot_og;
+    address payable private receiver;
     uint256 public protocel_fee;
-    address public authorized_signer;
+    address private authorized_signer;
     bool public isEnable_x_to_y;
 
     event EthscripCategory(bytes32 indexed _mRoot, string _name, uint256 _eTotal, uint256 _tAmount);
@@ -67,7 +66,7 @@ contract EthscripTokenProtocol is Ownable, ReentrancyGuard{
 
     constructor(address payable _receiver, address _authorized_signer,bytes32 _merkleRoot_og) {
         receiver = _receiver;
-        protocel_fee = 0.000 ether;
+        protocel_fee = 0.005 ether;
         merkleRoot_og = _merkleRoot_og;
         authorized_signer = _authorized_signer;
         isEnable_x_to_y = false;
@@ -114,7 +113,7 @@ contract EthscripTokenProtocol is Ownable, ReentrancyGuard{
         emit EthscripCategory(_mRoot, _name, _eTotal, _tAmount);
     }
 
-    function getEthscripHash(address _address, bytes32 _e_id, string memory _nonce) public pure returns (bytes32) {
+    function getEthscripHash(address _address, bytes32 _e_id, string memory _nonce) internal pure returns (bytes32) {
         bytes32 message = keccak256(abi.encodePacked(_address, _e_id, _nonce));
         bytes32 ethSignedMessage = ECDSA.toEthSignedMessageHash(message);
         return ethSignedMessage;
